@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>투자 인텔리전스 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c10;--bg2:#0f1218;--bg3:#151a22;--bg4:#1c2330;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#00d4aa;--accent2:#0099ff;--accent3:#ff6b35;
+  --gold:#f5c842;--red:#ff4560;--green:#00e396;
+  --text:#e8edf5;--text2:#8b95a8;--text3:#5a6478;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,170,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,170,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;background:rgba(10,12,16,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border2);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;gap:10px;}
+.logo-mark{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:3px;color:var(--accent);text-shadow:0 0 20px rgba(0,212,170,.4);white-space:nowrap;}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:2px;font-family:var(--mono);}
+.header-center{display:flex;gap:3px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px;}
+.tab-btn{padding:5px 11px;border:none;border-radius:5px;background:transparent;color:var(--text2);font-family:'Noto Sans KR',sans-serif;font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.tab-btn.active{background:var(--accent);color:#0a0c10;font-weight:700;}
+.tab-btn:hover:not(.active){color:var(--text);background:var(--bg4);}
+.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.live-badge{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text2);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,227,150,.4);}50%{opacity:.7;box-shadow:0 0 0 4px rgba(0,227,150,0);}}
+.countdown-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.countdown-bar-bg{width:72px;height:2px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.countdown-bar-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .5s linear;}
+.countdown-time{font-family:var(--mono);font-size:9px;color:var(--accent);}
+.countdown-label{font-family:var(--mono);font-size:8px;color:var(--text3);}
+.hdr-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--accent);font-family:var(--mono);font-size:10px;padding:5px 10px;border-radius:6px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.hdr-btn:hover{background:var(--accent);color:#0a0c10;}
+.hdr-btn.loading{opacity:.5;pointer-events:none;}
+
+/* ── MAIN ── */
+main{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:18px 20px 72px;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+
+/* ── 그리드 ── */
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:12px;}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:12px;}
+.gap{margin-bottom:16px;}
+
+/* ── 섹션 타이틀 ── */
+.st{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.st-text{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:var(--text);white-space:nowrap;}
+.st-line{flex:1;height:1px;background:var(--border);}
+.st-badge{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;white-space:nowrap;}
+
+/* ── 지수 카드 ── */
+.idx-card{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:13px;position:relative;overflow:hidden;transition:all .2s;}
+.idx-card:hover{transform:translateY(-1px);border-color:var(--border2);}
+.idx-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.idx-card.up::after{background:var(--green);}.idx-card.down::after{background:var(--red);}
+.idx-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:5px;}
+.idx-val{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.idx-chg{font-family:var(--mono);font-size:10px;}
+.idx-chg.up{color:var(--green);}.idx-chg.down{color:var(--red);}
+.idx-sub{font-size:9px;color:var(--text3);margin-top:1px;font-family:var(--mono);}
+
+/* ── 패널 ── */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:11px;overflow:hidden;}
+.panel:hover{border-color:var(--border2);}
+.pb{padding:14px;}
+
+/* ── 섹터 히트맵 ── */
+.sector-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.sc{border-radius:6px;padding:8px;text-align:center;cursor:pointer;transition:opacity .15s;}
+.sc:hover{opacity:.8;}
+.sc-name{font-size:9px;font-weight:700;margin-bottom:2px;}
+.sc-pct{font-family:var(--mono);font-size:11px;font-weight:600;}
+
+/* ── 종목 행 ── */
+.tr{display:flex;align-items:center;justify-content:space-between;padding:9px 6px;border-bottom:1px solid var(--border);transition:background .12s;border-radius:4px;}
+.tr:last-child{border-bottom:none;}
+.tr:hover{background:var(--bg4);}
+.tr-sym{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text);min-width:64px;}
+.tr-name{font-size:9px;color:var(--text3);}
+.tr-r{display:flex;align-items:center;gap:10px;}
+.tr-price{font-family:var(--mono);font-size:12px;color:var(--text);}
+.tr-chg{font-family:var(--mono);font-size:10px;}
+.tr-chg.up{color:var(--green);}.tr-chg.down{color:var(--red);}
+
+/* ── 액션 뱃지 ── */
+.ab{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.5px;white-space:nowrap;}
+.ab-buy{background:rgba(0,227,150,.15);color:var(--green);border:1px solid rgba(0,227,150,.3);}
+.ab-sell{background:rgba(255,69,96,.15);color:var(--red);border:1px solid rgba(255,69,96,.3);}
+.ab-hold{background:rgba(139,149,168,.12);color:var(--text2);border:1px solid rgba(139,149,168,.2);}
+.ab-watch{background:rgba(245,200,66,.12);color:var(--gold);border:1px solid rgba(245,200,66,.25);}
+.ab-cut{background:rgba(255,107,53,.15);color:var(--accent3);border:1px solid rgba(255,107,53,.3);}
+
+/* ── 포트 바 ── */
+.pb-wrap{display:flex;align-items:center;gap:6px;margin-top:2px;}
+.pb-bg{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.pb-fill{height:100%;border-radius:2px;transition:width .7s cubic-bezier(.4,0,.2,1);}
+
+/* ── 환율·원자재 ── */
+.fx-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.fx-row:last-child{border-bottom:none;}
+.fx-pair{font-family:var(--mono);font-size:10px;color:var(--text2);}
+.fx-val{font-family:var(--mono);font-size:12px;font-weight:600;}
+.fx-chg{font-family:var(--mono);font-size:9px;}
+.fx-chg.up{color:var(--green);}.fx-chg.down{color:var(--red);}
+
+/* ── AI 박스 ── */
+.ai-box{background:linear-gradient(135deg,rgba(0,212,170,.04),rgba(0,153,255,.04));border:1px solid rgba(0,212,170,.18);border-radius:10px;padding:15px;position:relative;overflow:hidden;}
+.ai-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.ai-lbl{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:2px;margin-bottom:7px;}
+.ai-text{font-size:12px;line-height:1.85;color:var(--text);}
+.ai-loading{color:var(--text3);font-style:italic;font-size:11px;}
+.ai-cursor{display:inline-block;width:6px;height:12px;background:var(--accent);animation:blink 1s step-end infinite;vertical-align:text-bottom;margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── 뉴스 ── */
+.news-item{padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:padding .12s;}
+.news-item:last-child{border-bottom:none;}
+.news-item:hover{padding-left:5px;}
+.n-meta{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.n-src{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.n-time{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.n-tag{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;}
+.n-title{font-size:11px;line-height:1.6;color:var(--text);}
+
+/* ── 이벤트 ── */
+.ev-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.ev-item:last-child{border-bottom:none;}
+.ev-date{font-family:var(--mono);font-size:9px;color:var(--accent2);min-width:40px;padding-top:1px;}
+.ev-title{font-size:11px;font-weight:500;color:var(--text);margin-bottom:1px;}
+.ev-desc{font-size:9px;color:var(--text3);}
+.ev-tag{display:inline-block;font-size:8px;padding:1px 4px;border-radius:3px;margin-left:4px;font-weight:700;}
+.tag-fomc{background:rgba(255,69,96,.15);color:var(--red);}
+.tag-econ{background:rgba(0,153,255,.15);color:var(--accent2);}
+.tag-earn{background:rgba(245,200,66,.12);color:var(--gold);}
+.tag-kr{background:rgba(0,212,170,.12);color:var(--accent);}
+
+/* ── VIX ── */
+.gauge-wrap{height:76px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;}
+.gauge-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;}
+.gauge-val{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;}
+.gauge-desc{font-size:10px;color:var(--text3);}
+
+/* ── 외인기관 ── */
+.flow-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.flow-row:last-child{border-bottom:none;}
+.flow-lbl{font-size:11px;color:var(--text2);}
+.flow-val{font-family:var(--mono);font-size:12px;font-weight:600;}
+.flow-sub{font-size:9px;color:var(--text3);font-family:var(--mono);}
+
+/* ── 부동산 ── */
+.re-tabs{display:flex;gap:5px;margin-bottom:12px;}
+.re-tab{padding:4px 12px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);font-family:'Noto Sans KR',sans-serif;font-size:10px;cursor:pointer;transition:all .2s;}
+.re-tab.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+.re-tab:hover:not(.active){background:var(--bg4);color:var(--text);}
+.re-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:12px;}
+.re-card{background:var(--bg4);border:1px solid var(--border);border-radius:7px;padding:11px;}
+.re-lbl{font-size:9px;color:var(--text3);margin-bottom:4px;}
+.re-val{font-family:var(--mono);font-size:16px;font-weight:600;margin-bottom:2px;}
+.re-val.up{color:var(--red);}.re-val.down{color:var(--accent2);}.re-val.flat{color:var(--text2);}
+.re-sub{font-size:9px;color:var(--text3);font-family:var(--mono);}
+.policy-item{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.policy-item:last-child{border-bottom:none;}
+.pol-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;margin-top:1px;}
+.pol-hot{background:rgba(255,69,96,.15);color:var(--red);border:1px solid rgba(255,69,96,.3);}
+.pol-info{background:rgba(0,153,255,.12);color:var(--accent2);border:1px solid rgba(0,153,255,.25);}
+.pol-warn{background:rgba(245,200,66,.12);color:var(--gold);border:1px solid rgba(245,200,66,.25);}
+.pol-title{font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.pol-desc{font-size:10px;color:var(--text3);line-height:1.5;}
+.apt-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.apt-row:last-child{border-bottom:none;}
+.apt-name{font-size:11px;font-weight:500;}
+.apt-loc{font-size:9px;color:var(--text3);margin-top:1px;}
+.apt-date{font-family:var(--mono);font-size:10px;color:var(--accent2);}
+.apt-units{font-size:9px;color:var(--text3);margin-top:1px;text-align:right;}
+.apt-rtag{display:inline-block;font-size:8px;padding:1px 4px;border-radius:3px;margin-right:4px;font-weight:700;}
+.apt-seoul{background:rgba(255,69,96,.12);color:var(--red);}
+.apt-gyeonggi{background:rgba(0,153,255,.12);color:var(--accent2);}
+.apt-incheon{background:rgba(0,212,170,.1);color:var(--accent);}
+
+/* ── 전략 ── */
+.strat-item{border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--bg3);}
+.strat-item:last-child{margin-bottom:0;}
+.strat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.strat-sym{font-family:var(--mono);font-size:12px;font-weight:600;}
+.strat-body{font-size:11px;color:var(--text2);line-height:1.7;}
+.strat-prog{margin-top:7px;display:flex;align-items:center;gap:7px;}
+.prog-lbl{font-size:9px;color:var(--text3);white-space:nowrap;}
+.prog-bar{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;}
+
+/* ══════════════════════════════════
+   포트폴리오 편집기 모달
+══════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:760px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;transform:translateY(16px);transition:transform .25s;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg3);}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--accent);}
+.modal-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;}
+.modal-close:hover{background:var(--bg4);color:var(--text);}
+.modal-body{overflow-y:auto;padding:20px;flex:1;}
+.modal-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--bg3);border-radius:7px;padding:3px;}
+.modal-tab{flex:1;padding:6px;border:none;border-radius:5px;background:transparent;color:var(--text2);font-family:'Noto Sans KR',sans-serif;font-size:11px;cursor:pointer;transition:all .2s;text-align:center;}
+.modal-tab.active{background:var(--accent2);color:#fff;font-weight:700;}
+
+/* 편집 테이블 */
+.edit-table{width:100%;border-collapse:collapse;}
+.edit-table th{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border2);}
+.edit-table td{padding:6px 6px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.edit-table tr:last-child td{border-bottom:none;}
+.edit-table tr:hover td{background:var(--bg4);}
+
+/* 인풋 스타일 */
+.edit-input{background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 8px;width:100%;outline:none;transition:border-color .15s;}
+.edit-input:focus{border-color:var(--accent);}
+.edit-select{background:var(--bg4);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:10px;padding:4px 6px;outline:none;cursor:pointer;transition:border-color .15s;}
+.edit-select:focus{border-color:var(--accent);}
+.edit-del{background:rgba(255,69,96,.1);border:1px solid rgba(255,69,96,.2);color:var(--red);border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all .15s;}
+.edit-del:hover{background:rgba(255,69,96,.25);}
+.edit-add{display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(0,212,170,.08);border:1px dashed rgba(0,212,170,.3);border-radius:7px;cursor:pointer;transition:all .2s;margin-top:10px;width:100%;color:var(--accent);font-size:12px;font-family:'Noto Sans KR',sans-serif;}
+.edit-add:hover{background:rgba(0,212,170,.14);}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--bg3);}
+.btn-cancel{background:var(--bg4);border:1px solid var(--border2);color:var(--text2);padding:7px 18px;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-cancel:hover{color:var(--text);}
+.btn-save{background:var(--accent);border:none;color:#0a0c10;padding:7px 22px;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-save:hover{background:#00c49a;}
+.save-ok{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);font-family:var(--mono);opacity:0;transition:opacity .3s;}
+.save-ok.show{opacity:1;}
+
+/* 색상 선택 */
+.color-dot{width:12px;height:12px;border-radius:50%;display:inline-block;cursor:pointer;border:2px solid transparent;transition:border-color .15s;}
+.color-dot.selected{border-color:#fff;}
+
+/* ── 스핀 ── */
+@keyframes spin{to{transform:rotate(360deg);}}
+.spinning{animation:spin 1s linear infinite;display:inline-block;}
+
+/* ── 반응형 ── */
+.mobile-tabs{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(10,12,16,.97);border-top:1px solid var(--border2);padding:5px 10px 13px;z-index:100;gap:2px;}
+@media(max-width:700px){
+  .mobile-tabs{display:flex;}
+  .mt{flex:1;text-align:center;padding:6px 2px;border-radius:6px;font-size:9px;color:var(--text3);cursor:pointer;transition:all .2s;}
+  .mt.active{color:var(--accent);background:rgba(0,212,170,.1);}
+  .mt-icon{font-size:14px;display:block;margin-bottom:1px;}
+  .g6,.g4,.g3,.g2,.g21,.g12{grid-template-columns:1fr;}
+  .header-center{display:none;}
+  .sector-grid{grid-template-columns:repeat(2,1fr);}
+  .modal{max-height:95vh;}
+}
+@media(max-width:1100px) and (min-width:701px){
+  .g6{grid-template-columns:repeat(3,1fr);}
+  .g4{grid-template-columns:repeat(2,1fr);}
+  .g21,.g12{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ PORTFOLIO EDITOR MODAL ══ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+<div class="modal">
+  <div class="modal-header">
+    <div class="modal-title">📝 내 포트폴리오 편집</div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px;font-family:var(--mono);">
+      ℹ️ 변경사항은 <span style="color:var(--accent)">이 브라우저에만</span> 저장됩니다. 다른 기기에서 열면 초기값으로 보입니다.
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchModalTab('intl')">🌐 해외 종목</button>
+      <button class="modal-tab" onclick="switchModalTab('dom')">🇰🇷 국내 종목</button>
+      <button class="modal-tab" onclick="switchModalTab('watch')">👁 관심 종목</button>
+      <button class="modal-tab" onclick="switchModalTab('strat')">🎯 전략 설정</button>
+    </div>
+
+    <!-- 해외 종목 편집 -->
+    <div id="medit-intl">
+      <table class="edit-table">
+        <thead><tr>
+          <th>티커</th><th>종목명</th><th>비중%</th><th>색상</th><th>액션</th><th></th>
+        </tr></thead>
+        <tbody id="intl-edit-rows"></tbody>
+      </table>
+      <button class="edit-add" onclick="addRow('intl')">＋ 종목 추가</button>
+    </div>
+
+    <!-- 국내 종목 편집 -->
+    <div id="medit-dom" style="display:none">
+      <table class="edit-table">
+        <thead><tr>
+          <th>종목명</th><th>종목코드</th><th>비중%</th><th>액션</th><th></th>
+        </tr></thead>
+        <tbody id="dom-edit-rows"></tbody>
+      </table>
+      <button class="edit-add" onclick="addRow('dom')">＋ 종목 추가</button>
+    </div>
+
+    <!-- 관심 종목 편집 -->
+    <div id="medit-watch" style="display:none">
+      <table class="edit-table">
+        <thead><tr>
+          <th>티커/종목명</th><th>설명</th><th>메모 (진입 전략)</th><th>액션</th><th></th>
+        </tr></thead>
+        <tbody id="watch-edit-rows"></tbody>
+      </table>
+      <button class="edit-add" onclick="addRow('watch')">＋ 종목 추가</button>
+    </div>
+
+    <!-- 전략 설정 -->
+    <div id="medit-strat" style="display:none">
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:500">🔴 손절 대기 종목</div>
+        <div id="strat-cut-rows"></div>
+        <button class="edit-add" onclick="addStratRow('cut')">＋ 손절 종목 추가</button>
+      </div>
+      <div style="margin-bottom:14px;margin-top:16px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:500">🟡 부분 익절 종목</div>
+        <div id="strat-sell-rows"></div>
+        <button class="edit-add" onclick="addStratRow('sell')">＋ 익절 종목 추가</button>
+      </div>
+      <div style="margin-top:16px">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:500">🟢 분할매수 타겟</div>
+        <div id="strat-buy-rows"></div>
+        <button class="edit-add" onclick="addStratRow('buy')">＋ 매수 종목 추가</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <div class="save-ok" id="save-ok">✓ 저장 완료</div>
+    <button class="btn-cancel" onclick="closeModal()">취소</button>
+    <button class="btn-save" onclick="savePortfolio()">💾 저장하기</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div style="flex-shrink:0">
+    <div class="logo-mark">INVEST INTEL</div>
+    <div class="logo-sub">슈빙이 투자 대시보드</div>
+  </div>
+  <div class="header-center">
+    <button class="tab-btn active" onclick="switchTab('overview')">📊 종합</button>
+    <button class="tab-btn" onclick="switchTab('portfolio')">💼 포트폴리오</button>
+    <button class="tab-btn" onclick="switchTab('global')">🌐 해외보드</button>
+    <button class="tab-btn" onclick="switchTab('domestic')">🇰🇷 국내보드</button>
+    <button class="tab-btn" onclick="switchTab('realestate')">🏢 부동산</button>
+    <button class="tab-btn" onclick="switchTab('strategy')">🎯 전략 가이드</button>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div><span id="live-time">--:--:--</span></div>
+    <div class="countdown-wrap">
+      <div style="display:flex;justify-content:space-between;width:84px">
+        <span class="countdown-label">자동 갱신</span>
+        <span class="countdown-time" id="cd-time">3:00</span>
+      </div>
+      <div class="countdown-bar-bg"><div class="countdown-bar-fill" id="cd-bar" style="width:100%"></div></div>
+    </div>
+    <button class="hdr-btn" onclick="openModal()" style="color:var(--gold);border-color:rgba(245,200,66,.3)">✏️ 포트폴리오 편집</button>
+    <button class="hdr-btn" id="refresh-btn" onclick="manualRefresh()"><span id="refresh-icon">↻</span> 새로고침</button>
+  </div>
+</header>
+
+<!-- ══ MAIN ══ -->
+<main>
+
+<!-- ────── 종합 탭 ────── -->
+<div class="tab-content active" id="tab-overview">
+  <div class="st"><span class="st-text">국내 지수 · 섹터</span><div class="st-line"></div><span class="st-badge" id="kr-upd">갱신 중...</span></div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px" class="gap">
+    <div class="g2" id="kr-idx-ov"></div>
+    <div class="panel"><div class="pb"><div class="sector-grid" id="sector-ov"></div></div></div>
+  </div>
+
+  <div class="st"><span class="st-text">해외 주요 지수</span><div class="st-line"></div><span class="st-badge" id="gl-upd">갱신 중...</span></div>
+  <div class="g6 gap" id="gl-idx-ov"></div>
+
+  <div class="g21 gap">
+    <div>
+      <div class="st"><span class="st-text">AI 투자 코멘트</span><div class="st-line"></div></div>
+      <div class="ai-box">
+        <div class="ai-lbl">⚡ CLAUDE ANALYSIS · 웹검색 실시간</div>
+        <div class="ai-text ai-loading" id="ai-main">시장 데이터 분석 중... <span class="ai-cursor"></span></div>
+      </div>
+    </div>
+    <div>
+      <div class="st"><span class="st-text">이번 주 이벤트</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb" id="ev-cal" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+  </div>
+
+  <div class="st"><span class="st-text">환율 · 원자재 · 금리</span><div class="st-line"></div></div>
+  <div class="g3 gap" id="fx-grid"></div>
+</div>
+
+<!-- ────── 포트폴리오 탭 ────── -->
+<div class="tab-content" id="tab-portfolio">
+  <div class="g2 gap">
+    <div>
+      <div class="st"><span class="st-text">해외 포트폴리오</span><div class="st-line"></div><span class="st-badge">INTERNATIONAL</span></div>
+      <div class="panel"><div class="pb" id="intl-port" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-text">국내 포트폴리오</span><div class="st-line"></div><span class="st-badge">DOMESTIC</span></div>
+      <div class="panel"><div class="pb" id="dom-port" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+  </div>
+  <div class="st"><span class="st-text">관심 종목 · 진입 대기</span><div class="st-line"></div></div>
+  <div class="panel gap"><div class="pb" id="watchlist" style="padding-top:6px;padding-bottom:6px;"></div></div>
+</div>
+
+<!-- ────── 해외보드 탭 ────── -->
+<div class="tab-content" id="tab-global">
+  <div class="st"><span class="st-text">미국 주요 지수</span><div class="st-line"></div></div>
+  <div class="g4 gap" id="us-idx"></div>
+  <div class="g2 gap">
+    <div>
+      <div class="st"><span class="st-text">아시아 · 유럽 지수</span><div class="st-line"></div></div>
+      <div class="g2" id="intl-idx"></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-text">공포지수 VIX</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb"><div class="gauge-wrap" id="vix-gauge"></div></div></div>
+    </div>
+  </div>
+  <div class="g21 gap">
+    <div>
+      <div class="st"><span class="st-text">글로벌 주요 뉴스</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb" id="global-news" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-text">환율 · 원자재</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb" id="fx-global" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ────── 국내보드 탭 ────── -->
+<div class="tab-content" id="tab-domestic">
+  <div class="g4 gap" id="kr-idx-det"></div>
+  <div class="g2 gap">
+    <div>
+      <div class="st"><span class="st-text">섹터 히트맵</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb"><div class="sector-grid" id="sector-dom"></div></div></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-text">외인 · 기관 순매수</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb" id="flow-panel" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+  </div>
+  <div class="st"><span class="st-text">국내 주요 뉴스</span><div class="st-line"></div></div>
+  <div class="panel gap"><div class="pb" id="dom-news" style="padding-top:6px;padding-bottom:6px;"></div></div>
+</div>
+
+<!-- ────── 부동산 탭 ────── -->
+<div class="tab-content" id="tab-realestate">
+
+  <!-- 지역 탭 + 통계 (묶음) -->
+  <div class="panel gap" style="overflow:visible">
+    <div style="padding:14px 16px 0">
+      <div class="re-tabs" style="margin-bottom:12px">
+        <button class="re-tab active" onclick="switchRegion('seoul',this)">서울 전체</button>
+        <button class="re-tab" onclick="switchRegion('gangnam',this)">강남·서초·송파</button>
+        <button class="re-tab" onclick="switchRegion('pangyo',this)">경기 판교</button>
+        <button class="re-tab" onclick="switchRegion('bundang',this)">경기 분당</button>
+      </div>
+      <div class="st" style="margin-bottom:10px"><span class="st-text" id="re-region-title">서울 전체 동향</span><div class="st-line"></div><span class="st-badge">WEEKLY</span></div>
+    </div>
+    <div style="padding:0 16px 14px">
+      <div class="re-stats" id="re-stats" style="margin-bottom:0"></div>
+    </div>
+  </div>
+
+  <div class="g2 gap">
+    <div>
+      <div class="st"><span class="st-text">부동산 뉴스</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb" id="re-news" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+    <div>
+      <div class="st"><span class="st-text">정책 · 규제 중요사항</span><div class="st-line"></div></div>
+      <div class="panel"><div class="pb" id="re-policy" style="padding-top:6px;padding-bottom:6px;"></div></div>
+    </div>
+  </div>
+  <div class="st"><span class="st-text">청약 캘린더</span><div class="st-line"></div><span class="st-badge">서울·판교·분당·수도권</span></div>
+  <div class="panel gap"><div class="pb" id="apt-cal" style="padding-top:6px;padding-bottom:6px;"></div></div>
+
+  <div class="st"><span class="st-text">AI 부동산 코멘트</span><div class="st-line"></div></div>
+  <div class="ai-box gap">
+    <div class="ai-lbl">⚡ REAL ESTATE ANALYSIS · 웹검색 실시간</div>
+    <div class="ai-text ai-loading" id="ai-re">부동산 데이터 분석 중... <span class="ai-cursor"></span></div>
+  </div>
+</div>
+
+<!-- ────── 전략 가이드 탭 ────── -->
+<div class="tab-content" id="tab-strategy">
+  <div class="g2 gap">
+    <div><div class="st"><span class="st-text">🔴 손절 대기</span><div class="st-line"></div></div><div id="strat-cut-view"></div></div>
+    <div><div class="st"><span class="st-text">🟡 부분 익절</span><div class="st-line"></div></div><div id="strat-sell-view"></div></div>
+  </div>
+  <div class="st"><span class="st-text">🟢 분할매수 타겟</span><div class="st-line"></div></div>
+  <div class="g3 gap" id="strat-buy-view"></div>
+  <div class="st"><span class="st-text">AI 전략 총평</span><div class="st-line"></div></div>
+  <div class="ai-box">
+    <div class="ai-lbl">⚡ STRATEGY ANALYSIS · 웹검색 실시간</div>
+    <div class="ai-text ai-loading" id="ai-strat">포트폴리오 전략 분석 중... <span class="ai-cursor"></span></div>
+  </div>
+</div>
+
+</main>
+
+<!-- 모바일 하단 탭 -->
+<div class="mobile-tabs">
+  <div class="mt active" onclick="switchTab('overview')"><span class="mt-icon">📊</span>종합</div>
+  <div class="mt" onclick="switchTab('portfolio')"><span class="mt-icon">💼</span>포트폴리오</div>
+  <div class="mt" onclick="switchTab('global')"><span class="mt-icon">🌐</span>해외</div>
+  <div class="mt" onclick="switchTab('domestic')"><span class="mt-icon">🇰🇷</span>국내</div>
+  <div class="mt" onclick="switchTab('realestate')"><span class="mt-icon">🏢</span>부동산</div>
+  <div class="mt" onclick="switchTab('strategy')"><span class="mt-icon">🎯</span>전략</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 기본 포트폴리오 데이터 (초기값)
+// ══════════════════════════════════════════
+const DEFAULT_PORTFOLIO = {
+  intl: [
+    { sym:'TSLA', name:'Tesla', pct:50, color:'#ff4560', action:'sell', actionLabel:'30% 익절' },
+    { sym:'TQQQ', name:'ProShares UltraPro QQQ', pct:27, color:'#f5c842', action:'sell', actionLabel:'50% 익절' },
+    { sym:'AMD',  name:'Advanced Micro Devices', pct:11, color:'#00d4aa', action:'hold', actionLabel:'홀드' },
+    { sym:'AMZN', name:'Amazon', pct:7, color:'#0099ff', action:'hold', actionLabel:'홀드' },
+    { sym:'T',    name:'AT&T',   pct:6,  color:'#8b95a8', action:'hold', actionLabel:'홀드' },
+  ],
+  dom: [
+    { sym:'삼성전자', name:'005930', pct:33, action:'hold', actionLabel:'홀드' },
+    { sym:'한미반도체', name:'042700', pct:6, action:'buy', actionLabel:'추가 매수' },
+    { sym:'SK하이닉스', name:'000660', pct:3, action:'hold', actionLabel:'홀드' },
+    { sym:'삼성SDI', name:'006400', pct:0, action:'hold', actionLabel:'홀드' },
+    { sym:'POSCO홀딩스', name:'005490', pct:0, action:'hold', actionLabel:'홀드' },
+    { sym:'성일하이텍', name:'365340', pct:0, action:'cut', actionLabel:'손절 검토' },
+    { sym:'코스모화학', name:'079720', pct:0, action:'cut', actionLabel:'손절 검토' },
+  ],
+  watch: [
+    { sym:'NVDA', name:'NVIDIA', note:'현재 $213대 — 조정 시 $190~195 1차 / $175~180 2차 분할매수', action:'watch', actionLabel:'분할매수 준비' },
+    { sym:'HD현대중공업', name:'329180', note:'현재 686,000원대 — 620,000~640,000원 1차 / 570,000~590,000원 2차 분할매수', action:'watch', actionLabel:'분할매수 준비' },
+    { sym:'한미반도체', name:'042700', note:'HBM 공급망 모멘텀 — 추가 분할 진입 검토', action:'buy', actionLabel:'추가 분할매수' },
+  ],
+  strategy: {
+    cut: [
+      { sym:'코스모화학', yfKey:null, detail:'2차전지 업황 회복 지연, 중국 공급 과잉 지속. 반등 시 분할 손절 → 수익 섹터 재배치 권장.', targetNote:'반등 5% 이상 시 분할 손절 실행', prog:0 },
+      { sym:'성일하이텍', yfKey:null, detail:'폐배터리 재활용 수요 둔화, 수익성 악화 지속. 손절 후 조선·AI 반도체 섹터로 재배치.', targetNote:'현 가격대에서 분할 손절 검토', prog:0 },
+    ],
+    sell: [
+      { sym:'TQQQ', yfKey:'tqqq', detail:'현재 $61대. 나스닥 3배 레버리지 — 변동성 리스크 누적. 50% 익절 후 NVDA 현물 전환으로 리스크 축소 권장.', targetNote:'$63~65 도달 시 50% 수량 익절 실행', prog:0 },
+      { sym:'TSLA', yfKey:'tsla', detail:'현재 $376대. 실적 발표 이후 반등 구간이나 관세 리스크·경쟁 심화 여전. 30% 부분 익절로 리스크 헤지 권장.', targetNote:'$390~400 도달 시 30% 수량 익절', prog:0 },
+    ],
+    buy: [
+      { sym:'NVDA', yfKey:'nvda', detail:'현재 $213대(52주 최고가 근접). Blackwell GPU 공급 확대, AI 데이터센터 수요 폭발적. 고점 부담 있어 조정 구간 분할매수 전략 권장.', targetNote:'1차 $190~195 / 2차 $175~180', prog:0 },
+      { sym:'HD현대중공업', yfKey:null, detail:'현재 686,000원대. LNG선 수주 잔고 사상 최대, 방산 모멘텀 추가. 조선 슈퍼사이클 초입 — 조정 시 분할 진입 적기.', targetNote:'1차 620,000~640,000원 / 2차 570,000~590,000원', prog:0 },
+      { sym:'한미반도체', yfKey:null, detail:'HBM4 공급망 핵심 장비주, TSMC 레퍼런스 진입 가시화. 반도체 업사이클 수혜 지속 예상.', targetNote:'현 가격대 단계적 추가 매수', prog:30 },
+    ],
+  }
+};
+
+// ── localStorage 로드/저장 ──
+const STORAGE_KEY = 'invest_intel_portfolio_v1';
+
+function loadPortfolio() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_PORTFOLIO));
+}
+
+function saveToStorage(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+let PORTFOLIO = loadPortfolio();
+
+// ══════════════════════════════════════════
+// 탭 전환
+// ══════════════════════════════════════════
+const TAB_NAMES = ['overview','portfolio','global','domestic','realestate','strategy'];
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.mt').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+name)?.classList.add('active');
+  const i = TAB_NAMES.indexOf(name);
+  document.querySelectorAll('.tab-btn')[i]?.classList.add('active');
+  document.querySelectorAll('.mt')[i]?.classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// 시계 + 카운트다운
+// ══════════════════════════════════════════
+setInterval(()=>{ document.getElementById('live-time').textContent = new Date().toLocaleTimeString('ko-KR'); }, 1000);
+document.getElementById('live-time').textContent = new Date().toLocaleTimeString('ko-KR');
+
+const DATA_INTERVAL = 180, AI_INTERVAL = 1500;
+let dataSec = DATA_INTERVAL, aiSec = AI_INTERVAL;
+
+setInterval(() => {
+  dataSec--; aiSec--;
+  if (dataSec <= 0) { dataSec = DATA_INTERVAL; fetchMarketData(); }
+  if (aiSec <= 0) { aiSec = AI_INTERVAL; fetchAllAI(); }
+  document.getElementById('cd-bar').style.width = (dataSec/DATA_INTERVAL*100)+'%';
+  const m=Math.floor(dataSec/60), s=dataSec%60;
+  document.getElementById('cd-time').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+}, 1000);
+
+// ══════════════════════════════════════════════════════
+// 통합 데이터 — Claude API (웹검색 기반)
+// AbortController 사용 (모바일 완전 호환)
+// ══════════════════════════════════════════════════════
+const PCACHE = {};   // 시세 캐시 (하위 호환)
+const DATA_CACHE = {}; // 통합 캐시
+
+// ── Claude API 호출 공통 함수 ──
+async function callClaude(prompt, maxTokens = 2000, timeoutMs = 55000) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: maxTokens,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    clearTimeout(tid);
+    const d = await r.json();
+    return (d.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
+  } catch(e) {
+    clearTimeout(tid);
+    throw e;
+  }
+}
+
+// ── JSON 추출 (다양한 포맷 대응) ──
+function extractJSON(text) {
+  if (!text) return null;
+  const tries = [
+    () => JSON.parse(text.trim()),
+    () => JSON.parse(text.replace(/```json\s*/gi,'').replace(/```/g,'').trim()),
+    () => { const m = text.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; },
+    () => { const m = text.match(/\[[\s\S]*\]/); return m ? JSON.parse(m[0]) : null; },
+  ];
+  for (const fn of tries) {
+    try { const r = fn(); if (r) return r; } catch {}
+  }
+  return null;
+}
+
+// ── 시세 카드 렌더 (Claude 데이터 기반) ──
+function makeCard(label, price, change, sub, extraClass='') {
+  if (!price) return `
+    <div class="idx-card ${extraClass}">
+      <div class="idx-lbl">${label}</div>
+      <div class="idx-val" style="font-size:13px;color:var(--text3)">검색 중...</div>
+      <div class="idx-sub">${sub||''}</div>
+    </div>`;
+  const chgNum = parseFloat((change||'0').replace(/[^\d.\-+]/g,''));
+  const dir = chgNum >= 0 ? 'up' : 'down';
+  const arrow = chgNum >= 0 ? '▲' : '▼';
+  const chgStr = change || '';
+  return `
+    <div class="idx-card ${dir} ${extraClass}">
+      <div class="idx-lbl">${label}</div>
+      <div class="idx-val">${price}</div>
+      <div class="idx-chg ${dir}">${arrow} ${chgStr}</div>
+      <div class="idx-sub">${sub||''}</div>
+    </div>`;
+}
+
+// ── 시세 데이터 가져오기 ──
+async function fetchMarketData() {
+  const today = new Date().toLocaleDateString('ko-KR', {month:'long',day:'numeric',weekday:'short'});
+
+  // 로딩 상태 표시
+  ['kr-idx-ov','gl-idx-ov','us-idx','kr-idx-det'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text3);font-size:11px;font-family:var(--mono)">시세 검색 중...</div>';
+  });
+  const nowStr = el => { const e=document.getElementById(el); if(e) e.textContent='검색 중...'; };
+  nowStr('kr-upd'); nowStr('gl-upd');
+
+  try {
+    const text = await callClaude(
+      `오늘(${today}) 기준 다음 시세를 검색해서 정확히 아래 JSON 형식으로만 답해줘. ` +
+      `코드블록 없이, 설명 없이, JSON 객체만 출력:
+` +
+      `{"kospi":{"p":"2,XXX","c":"+X.XX%"},"kosdaq":{"p":"XXX","c":"+X.XX%"},` +
+      `"sp500":{"p":"X,XXX","c":"+X.XX%"},"nasdaq":{"p":"XX,XXX","c":"+X.XX%"},` +
+      `"dow":{"p":"XX,XXX","c":"+X.XX%"},"vix":{"p":"XX.X","c":"+X.XX%"},` +
+      `"nikkei":{"p":"XX,XXX","c":"+X.XX%"},"hsi":{"p":"XX,XXX","c":"+X.XX%"},` +
+      `"usdkrw":{"p":"X,XXX","c":"+X.XX%"},"gold":{"p":"X,XXX","c":"+X.XX%"},` +
+      `"wti":{"p":"XX.X","c":"+X.XX%"},"us10y":{"p":"X.XX%","c":"+X.XX%"},` +
+      `"NVDA":{"p":"$XXX","c":"+X.XX%"},"TSLA":{"p":"$XXX","c":"+X.XX%"},` +
+      `"TQQQ":{"p":"$XX","c":"+X.XX%"},"AMD":{"p":"$XXX","c":"+X.XX%"},` +
+      `"AMZN":{"p":"$XXX","c":"+X.XX%"},"T":{"p":"$XX","c":"+X.XX%"},` +
+      `"삼성전자":{"p":"XX,XXX원","c":"+X.XX%"},"한미반도체":{"p":"XX,XXX원","c":"+X.XX%"},` +
+      `"SK하이닉스":{"p":"XXX,XXX원","c":"+X.XX%"},"HD현대중공업":{"p":"XXX,XXX원","c":"+X.XX%"}}`,
+      800
+    );
+    const data = extractJSON(text);
+    if (data) {
+      Object.assign(DATA_CACHE, data);
+      renderAllPrice();
+      const now = new Date().toLocaleTimeString('ko-KR');
+      const u1=document.getElementById('kr-upd'); if(u1) u1.textContent=now+' 기준';
+      const u2=document.getElementById('gl-upd'); if(u2) u2.textContent=now+' 기준';
+    }
+  } catch(e) {
+    console.warn('fetchMarketData error:', e);
+    ['kr-upd','gl-upd'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='오류'; });
+  }
+}
+
+// ── 시세 패널 전체 렌더 ──
+function renderAllPrice() {
+  const D = DATA_CACHE;
+  const c = (key, sub) => makeCard(key, D[key]?.p, D[key]?.c, sub);
+
+  // 종합 > 국내
+  const krOv = document.getElementById('kr-idx-ov');
+  if (krOv) krOv.innerHTML = c('kospi','코스피') + c('kosdaq','코스닥');
+
+  // 종합 > 해외
+  const glOv = document.getElementById('gl-idx-ov');
+  if (glOv) glOv.innerHTML = c('sp500','NYSE') + c('nasdaq','NASDAQ') + c('dow','NYSE') +
+    c('nikkei','일본') + c('usdkrw','달러/원') + c('vix','공포지수');
+
+  // 해외보드 미국
+  const usI = document.getElementById('us-idx');
+  if (usI) usI.innerHTML = c('sp500','NYSE') + c('nasdaq','NASDAQ') + c('dow','NYSE') + c('vix','공포지수');
+
+  // 해외보드 아시아
+  const intlI = document.getElementById('intl-idx');
+  if (intlI) intlI.innerHTML = c('nikkei','일본') + c('hsi','홍콩');
+
+  // VIX 게이지
+  const vixEl = document.getElementById('vix-gauge');
+  if (vixEl && D.vix) {
+    const v = parseFloat(D.vix.p);
+    const col = v < 15 ? 'var(--green)' : v < 25 ? 'var(--gold)' : 'var(--red)';
+    const desc = v < 15 ? '📉 극도의 안정' : v < 20 ? '😌 안정권' : v < 30 ? '😬 경계 구간' : '🔴 공포 구간';
+    vixEl.innerHTML = `<div class="gauge-lbl">VIX INDEX</div><div class="gauge-val" style="color:${col}">${D.vix.p}</div><div class="gauge-desc">${desc}</div>`;
+  }
+
+  // 국내보드
+  const krD = document.getElementById('kr-idx-det');
+  if (krD) krD.innerHTML = c('kospi','코스피') + c('kosdaq','코스닥') +
+    c('삼성전자','005930') + c('SK하이닉스','000660');
+
+  // 환율·원자재 그리드
+  const fxG = document.getElementById('fx-grid');
+  if (fxG) {
+    const fxItems = [
+      {k:'usdkrw',i:'💱',s:'달러/원'},{k:'gold',i:'🥇',s:'$/oz'},
+      {k:'wti',i:'🛢',s:'$/bbl'},{k:'us10y',i:'📊',s:'국채 수익률'},{k:'vix',i:'😨',s:'공포지수'}
+    ];
+    fxG.innerHTML = fxItems.map(({k,i,s})=>{
+      const d=D[k]; if(!d) return `<div class="panel"><div class="pb" style="padding:12px"><div style="font-size:9px;color:var(--text3);font-family:var(--mono)">${i} ${k.toUpperCase()}</div><div style="font-size:13px;color:var(--text3);font-family:var(--mono)">--</div></div></div>`;
+      const chgNum=parseFloat((d.c||'0').replace(/[^\d.\-+]/g,''));
+      const dir=chgNum>=0?'up':'down';
+      return `<div class="panel"><div class="pb" style="display:flex;align-items:center;justify-content:space-between;padding:12px">
+        <div><div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">${i} ${k.toUpperCase()}</div>
+        <div style="font-family:var(--mono);font-size:18px;font-weight:600">${d.p}</div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">${s}</div></div>
+        <div class="fx-chg ${dir}" style="font-size:12px">${chgNum>=0?'▲':'▼'} ${d.c}</div>
+      </div></div>`;
+    }).join('');
+  }
+
+  // 해외보드 환율 패널
+  const fxGl = document.getElementById('fx-global');
+  if (fxGl) {
+    fxGl.innerHTML = ['usdkrw','gold','wti','us10y'].map(k=>{
+      const d=D[k]; if(!d) return '';
+      const chgNum=parseFloat((d.c||'0').replace(/[^\d.\-+]/g,''));
+      const dir=chgNum>=0?'up':'down';
+      return `<div class="fx-row"><span class="fx-pair">${k.toUpperCase()}</span>
+        <div style="text-align:right"><div class="fx-val">${d.p}</div>
+        <div class="fx-chg ${dir}">${chgNum>=0?'▲':'▼'} ${d.c}</div></div></div>`;
+    }).join('');
+  }
+
+  // 포트폴리오 렌더 (실시간 가격 포함)
+  renderPortfolio();
+}
+
+// ── 포트폴리오 렌더 (DATA_CACHE 기반) ──
+function fmt(p, sym) {
+  if (p==null) return '--';
+  // 한국 종목/지수/환율 — 원화 표시
+  if (sym && (sym.includes('KRW') || sym==='^KS11' || sym==='^KQ11' ||
+      sym.endsWith('.KS') || sym.endsWith('.KQ')))
+    return p.toLocaleString('ko-KR', {maximumFractionDigits:0}) + '원';
+  if (p>1000) return p.toLocaleString('en-US',{maximumFractionDigits:0});
+  if (p>10) return p.toFixed(2);
+  return p.toFixed(4);
+}
+
+const SYM = {
+  kospi:{ sym:'^KS11', label:'KOSPI', sub:'코스피' },
+  kosdaq:{ sym:'^KQ11', label:'KOSDAQ', sub:'코스닥' },
+  sp500:{ sym:'^GSPC', label:'S&P 500', sub:'NYSE' },
+  nasdaq:{ sym:'^IXIC', label:'NASDAQ', sub:'NASDAQ' },
+  dow:{ sym:'^DJI', label:'DOW', sub:'NYSE' },
+  rus:{ sym:'^RUT', label:'Russell 2000', sub:'소형주' },
+  vix:{ sym:'^VIX', label:'VIX', sub:'공포지수' },
+  nikkei:{ sym:'^N225', label:'NIKKEI 225', sub:'일본' },
+  hsi:{ sym:'^HSI', label:'HANG SENG', sub:'홍콩' },
+  sse:{ sym:'000001.SS', label:'SHANGHAI', sub:'중국' },
+  dax:{ sym:'^GDAXI', label:'DAX', sub:'독일' },
+  ftse:{ sym:'^FTSE', label:'FTSE 100', sub:'영국' },
+  usdkrw:{ sym:'KRW=X', label:'USD/KRW', sub:'달러원' },
+  usdjpy:{ sym:'JPY=X', label:'USD/JPY', sub:'달러엔' },
+  gold:{ sym:'GC=F', label:'금 Gold', sub:'$/oz' },
+  wti:{ sym:'CL=F', label:'WTI 원유', sub:'$/bbl' },
+  us10y:{ sym:'^TNX', label:'미 10Y 금리', sub:'국채 수익률' },
+  tsla:{ sym:'TSLA', label:'TSLA', sub:'Tesla' },
+  tqqq:{ sym:'TQQQ', label:'TQQQ', sub:'UltraPro QQQ' },
+  amd:{ sym:'AMD', label:'AMD', sub:'Advanced Micro' },
+  amzn:{ sym:'AMZN', label:'AMZN', sub:'Amazon' },
+  t:{ sym:'T', label:'T', sub:'AT&T' },
+  nvda:{ sym:'NVDA', label:'NVDA', sub:'NVIDIA' },
+  // 한국 종목 (.KS = KOSPI, .KQ = KOSDAQ)
+  samsung:   { sym:'005930.KS', label:'삼성전자',    sub:'005930' },
+  hanmi:     { sym:'042700.KQ', label:'한미반도체',  sub:'042700' },
+  skhynix:   { sym:'000660.KS', label:'SK하이닉스', sub:'000660' },
+  samsungsdi:{ sym:'006400.KS', label:'삼성SDI',    sub:'006400' },
+  posco:     { sym:'005490.KS', label:'POSCO홀딩스',sub:'005490' },
+  sungeel:   { sym:'365340.KQ', label:'성일하이텍', sub:'365340' },
+  cosmo:     { sym:'079720.KQ', label:'코스모화학', sub:'079720' },
+};
+
+// 보유 해외종목 → YF 심볼 매핑 (동적)
+function getYFKey(sym) {
+  const up = sym.toUpperCase();
+  // 한글 종목명 직접 매핑
+  const krMap = {
+    '삼성전자':'samsung','한미반도체':'hanmi','SK하이닉스':'skhynix',
+    'SK하이닉스':'skhynix','삼성SDI':'samsungsdi','POSCO홀딩스':'posco',
+    '성일하이텍':'sungeel','코스모화학':'cosmo',
+    'HD현대중공업':null, // YF 미지원 처리
+  };
+  if (krMap[sym] !== undefined) return krMap[sym];
+  for(const [k,v] of Object.entries(SYM)) { if(v.label===up||v.sym===up) return k; }
+  return null;
+}
+
+async function fetchMarketData() {
+  const keys = ['kospi','kosdaq','sp500','nasdaq','dow','rus','vix','nikkei','hsi','sse','dax','ftse','usdkrw','usdjpy','gold','wti','us10y','tsla','tqqq','amd','amzn','t','nvda','samsung','hanmi','skhynix','samsungsdi','posco','sungeel','cosmo'];
+  const res = await Promise.allSettled(keys.map(k=>fetchYahoo(SYM[k].sym).then(d=>({k,d}))));
+  res.forEach(r=>{ if(r.status==='fulfilled'&&r.value?.d) PCACHE[r.value.k]=r.value.d; });
+  const now = new Date().toLocaleTimeString('ko-KR');
+  const upKr = document.getElementById('kr-upd'); if(upKr) upKr.textContent=now+' 기준';
+  const upGl = document.getElementById('gl-upd'); if(upGl) upGl.textContent=now+' 기준';
+  renderAllPrice();
+}
+
+// ══════════════════════════════════════════
+// 지수 카드 생성
+// ══════════════════════════════════════════
+function idxCard(key) {
+  const m = SYM[key], d = PCACHE[key];
+  if (!d) return `<div class="idx-card"><div class="idx-lbl">${m?.label||key}</div><div class="idx-val" style="font-size:13px;color:var(--text3)">로딩 중...</div><div class="idx-sub">${m?.sub||''}</div></div>`;
+  const dir = d.change>=0?'up':'down', sign=d.change>=0?'+':'', arrow=d.change>=0?'▲':'▼';
+  const statusBadge = d.label ? `<span style="font-family:var(--mono);font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(139,149,168,.15);color:var(--text3);margin-left:4px">${d.label}</span>` : '';
+  return `<div class="idx-card ${dir}">
+    <div class="idx-lbl">${m.label}${statusBadge}</div>
+    <div class="idx-val">${fmt(d.price,m.sym)}</div>
+    <div class="idx-chg ${dir}">${arrow} ${sign}${d.change.toFixed(2)}%</div>
+    <div class="idx-sub">${m.sub}</div>
+  </div>`;
+}
+
+function renderAllPrice() {
+  // 종합 > 국내
+  const krOv=document.getElementById('kr-idx-ov'); if(krOv) krOv.innerHTML=['kospi','kosdaq'].map(idxCard).join('');
+  // 종합 > 해외
+  const glOv=document.getElementById('gl-idx-ov'); if(glOv) glOv.innerHTML=['sp500','nasdaq','dow','nikkei','usdkrw','vix'].map(idxCard).join('');
+  // 해외보드 미국
+  const usI=document.getElementById('us-idx'); if(usI) usI.innerHTML=['sp500','nasdaq','dow','rus'].map(idxCard).join('');
+  // 해외보드 아시아유럽
+  const intlI=document.getElementById('intl-idx'); if(intlI) intlI.innerHTML=['nikkei','hsi','sse','dax','ftse'].map(idxCard).join('');
+  // 국내보드
+  const krDet=document.getElementById('kr-idx-det');
+  if(krDet) krDet.innerHTML=['kospi','kosdaq'].map(idxCard).join('')+
+    `<div class="idx-card neutral"><div class="idx-lbl">외국인 순매수</div><div class="idx-val" style="font-size:14px;color:var(--green)">+3,240억</div><div class="idx-sub">KOSPI 기준</div></div>`+
+    `<div class="idx-card neutral"><div class="idx-lbl">기관 순매수</div><div class="idx-val" style="font-size:14px;color:var(--green)">+890억</div><div class="idx-sub">연기금 포함</div></div>`;
+  // VIX
+  const vixEl=document.getElementById('vix-gauge');
+  if(vixEl){ const v=PCACHE['vix'],val=v?v.price.toFixed(1):'--',col=v?(v.price<15?'var(--green)':v.price<25?'var(--gold)':'var(--red)'):'var(--text3)',desc=v?(v.price<15?'📉 극도의 안정':v.price<20?'😌 안정권':v.price<30?'😬 경계 구간':'🔴 공포 구간'):'--'; vixEl.innerHTML=`<div class="gauge-lbl">VIX INDEX</div><div class="gauge-val" style="color:${col}">${val}</div><div class="gauge-desc">${desc}</div>`; }
+  // 환율 그리드 (종합)
+  const fxG=document.getElementById('fx-grid');
+  if(fxG){ const items=[{k:'usdkrw',i:'💱'},{k:'usdjpy',i:'🇯🇵'},{k:'gold',i:'🥇'},{k:'wti',i:'🛢'},{k:'us10y',i:'📊'}];
+    fxG.innerHTML=items.map(({k,i})=>{const m=SYM[k],d=PCACHE[k],p=d?fmt(d.price,m.sym):'--',c=d?d.change:null,dir=c!=null?(c>=0?'up':'down'):'',sign=c!=null?(c>=0?'+':''):'';
+      return `<div class="panel"><div class="pb" style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">${i} ${m.label}</div><div style="font-family:var(--mono);font-size:18px;font-weight:600">${p}</div><div style="font-size:9px;color:var(--text3);font-family:var(--mono)">${m.sub}</div></div>${c!=null?`<div class="fx-chg ${dir}" style="font-size:12px">${c>=0?'▲':'▼'} ${sign}${Math.abs(c).toFixed(2)}%</div>`:''}</div></div>`;}).join(''); }
+  // 환율 해외보드
+  const fxGl=document.getElementById('fx-global');
+  if(fxGl) fxGl.innerHTML=['usdkrw','usdjpy','gold','wti','us10y'].map(k=>{const m=SYM[k],d=PCACHE[k],p=d?fmt(d.price,m.sym):'--',c=d?d.change:null,dir=c!=null?(c>=0?'up':'down'):'';
+    return `<div class="fx-row"><span class="fx-pair">${m.label}</span><div style="text-align:right"><div class="fx-val">${p}</div>${c!=null?`<div class="fx-chg ${dir}">${c>=0?'▲':'▼'} ${Math.abs(c).toFixed(2)}%</div>`:''}</div></div>`;}).join('');
+  // 포트폴리오 렌더
+  renderPortfolio();
+}
+
+// ══════════════════════════════════════════
+// 포트폴리오 렌더 (PORTFOLIO 데이터 기반)
+// ══════════════════════════════════════════
+function renderPortfolio() {
+  // 해외
+  const intlEl=document.getElementById('intl-port');
+  if(intlEl) intlEl.innerHTML=PORTFOLIO.intl.map(p=>{
+    const d=DATA_CACHE[p.sym]; const price=d?d.p:''; const cStr=d?d.c:''; const chgNum=parseFloat((cStr||'0').replace(/[^\d.\-+]/g,'')); const c=d?chgNum:null,dir=c!=null?(c>=0?'up':'down'):'';
+    return `<div class="tr">
+      <div><div class="tr-sym">${p.sym}</div><div class="tr-name">${p.name}</div></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${price?`<span style="font-family:var(--mono);font-size:12px;color:var(--text)">${price}</span>`:''}
+          ${c!=null?`<span class="tr-chg ${dir}">${c>=0?'▲':'▼'} ${Math.abs(c).toFixed(2)}%</span>`:''}
+          <span class="ab ab-${p.action}">${p.actionLabel}</span>
+        </div>
+        ${p.pct?`<div class="pb-wrap" style="width:140px"><div class="pb-bg"><div class="pb-fill" style="width:${p.pct}%;background:${p.color}"></div></div><span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${p.pct}%</span></div>`:''}
+      </div>
+    </div>`; }).join('');
+  // 국내
+  const domEl=document.getElementById('dom-port');
+  if(domEl) domEl.innerHTML=PORTFOLIO.dom.map(p=>{
+    const d=DATA_CACHE[p.sym]; const price=d?d.p:''; const cStr=d?d.c:''; const chgNum=parseFloat((cStr||'0').replace(/[^\d.\-+]/g,'')); const c=d?chgNum:null, dir=c!=null?(c>=0?'up':'down'):'';
+    return `<div class="tr">
+      <div><div class="tr-sym">${p.sym}</div><div class="tr-name">${p.name}</div></div>
+      <div class="tr-r">
+        ${price?`<span style="font-family:var(--mono);font-size:12px;color:var(--text)">${price}</span>`:''}
+        ${c!=null?`<span class="tr-chg ${dir}">${c>=0?'▲':'▼'} ${Math.abs(c).toFixed(2)}%</span>`:''}
+        ${p.pct?`<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${p.pct}%</span>`:''}
+        <span class="ab ab-${p.action}">${p.actionLabel}</span>
+      </div>
+    </div>`;}).join('');
+  // 관심
+  const wlEl=document.getElementById('watchlist');
+  if(wlEl) wlEl.innerHTML=PORTFOLIO.watch.map(w=>{
+    const d=DATA_CACHE[w.sym]; const price=d?d.p:''; const cStr=d?d.c:''; const chgNum=parseFloat((cStr||'0').replace(/[^\d.\-+]/g,'')); const c=d?chgNum:null,dir=c!=null?(c>=0?'up':'down'):'';
+    return `<div class="tr">
+      <div><div class="tr-sym">${w.sym}</div><div class="tr-name">${w.name}</div><div style="font-size:9px;color:var(--accent);margin-top:1px">${w.note}</div></div>
+      <div class="tr-r">
+        ${price?`<span style="font-family:var(--mono);font-size:11px">${price}</span>`:''}
+        ${c!=null?`<span class="tr-chg ${dir}">${c>=0?'▲':'▼'} ${Math.abs(c).toFixed(2)}%</span>`:''}
+        <span class="ab ab-${w.action}">${w.actionLabel}</span>
+      </div>
+    </div>`; }).join('');
+  // 전략
+  renderStrategy();
+}
+
+function renderStrategy() {
+  const s=PORTFOLIO.strategy;
+
+  function stratCard(x, badgeClass, badgeLabel, barColor) {
+    const d = x.yfKey ? PCACHE[x.yfKey] : null;
+    const priceHtml = d
+      ? `<span style="font-family:var(--mono);font-size:11px;color:var(--text);margin-right:6px">$${fmt(d.price)}</span><span class="tr-chg ${d.change>=0?'up':'down'}" style="font-size:10px">${d.change>=0?'▲':'▼'} ${Math.abs(d.change).toFixed(2)}%</span>`
+      : '';
+    const targetHtml = x.targetNote
+      ? `<div style="margin-top:5px;font-size:10px;color:var(--gold);font-family:var(--mono)">🎯 ${x.targetNote}</div>`
+      : '';
+    return `<div class="strat-item">
+      <div class="strat-top">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="strat-sym">${x.sym}</span>
+          ${priceHtml}
+        </div>
+        <span class="ab ${badgeClass}">${badgeLabel}</span>
+      </div>
+      <div class="strat-body">${x.detail}</div>
+      ${targetHtml}
+      <div class="strat-prog">
+        <span class="prog-lbl">진행도</span>
+        <div class="prog-bar"><div class="prog-fill" style="width:${x.prog||0}%;background:${barColor}"></div></div>
+        <span style="font-family:var(--mono);font-size:9px;color:${barColor}">${x.prog||0}%</span>
+      </div>
+    </div>`;
+  }
+
+  const cutEl=document.getElementById('strat-cut-view');
+  if(cutEl) cutEl.innerHTML=(s.cut||[]).map(x=>stratCard(x,'ab-cut','손절 검토','var(--red)')).join('');
+
+  const sellEl=document.getElementById('strat-sell-view');
+  if(sellEl) sellEl.innerHTML=(s.sell||[]).map(x=>stratCard(x,'ab-sell','부분 익절','var(--gold)')).join('');
+
+  const buyEl=document.getElementById('strat-buy-view');
+  if(buyEl) buyEl.innerHTML=(s.buy||[]).map(x=>stratCard(x,'ab-buy','분할매수','var(--green)')).join('');
+}
+
+// ══════════════════════════════════════════
+// 포트폴리오 편집 모달
+// ══════════════════════════════════════════
+let editData = null;
+let curModalTab = 'intl';
+const COLORS = ['#ff4560','#f5c842','#00d4aa','#0099ff','#8b95a8','#ff6b35','#a78bfa','#34d399','#fb923c','#60a5fa'];
+const ACTION_OPTS = { hold:'홀드', buy:'매수', sell:'익절', cut:'손절 검토', watch:'관심' };
+
+function openModal() {
+  editData = JSON.parse(JSON.stringify(PORTFOLIO));
+  switchModalTab('intl');
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('save-ok').classList.remove('show');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModalOutside(e) { if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+
+function switchModalTab(tab) {
+  curModalTab = tab;
+  ['intl','dom','watch','strat'].forEach(t=>{
+    document.getElementById('medit-'+t).style.display = t===tab?'block':'none';
+  });
+  document.querySelectorAll('.modal-tab').forEach((btn,i)=>{
+    btn.classList.toggle('active',['intl','dom','watch','strat'][i]===tab);
+  });
+  renderModalRows();
+}
+
+function actionSelect(val, onChange) {
+  return `<select class="edit-select" onchange="${onChange}">
+    ${Object.entries(ACTION_OPTS).map(([k,v])=>`<option value="${k}" ${val===k?'selected':''}>${v}</option>`).join('')}
+  </select>`;
+}
+
+function renderModalRows() {
+  // 해외
+  const intlBody=document.getElementById('intl-edit-rows');
+  if(intlBody) intlBody.innerHTML=editData.intl.map((p,i)=>`
+    <tr>
+      <td><input class="edit-input" value="${p.sym}" onchange="editData.intl[${i}].sym=this.value" style="width:70px"></td>
+      <td><input class="edit-input" value="${p.name}" onchange="editData.intl[${i}].name=this.value"></td>
+      <td><input class="edit-input" type="number" value="${p.pct||0}" onchange="editData.intl[${i}].pct=+this.value" style="width:55px"></td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">${COLORS.map(c=>`<span class="color-dot${p.color===c?' selected':''}" style="background:${c}" onclick="editData.intl[${i}].color='${c}';renderModalRows()"></span>`).join('')}</div></td>
+      <td>${actionSelect(p.action,`editData.intl[${i}].action=this.value;editData.intl[${i}].actionLabel=({hold:'홀드',buy:'매수',sell:'익절',cut:'손절 검토',watch:'관심'})[this.value]`)}</td>
+      <td><button class="edit-del" onclick="editData.intl.splice(${i},1);renderModalRows()">✕</button></td>
+    </tr>`).join('');
+  // 국내
+  const domBody=document.getElementById('dom-edit-rows');
+  if(domBody) domBody.innerHTML=editData.dom.map((p,i)=>`
+    <tr>
+      <td><input class="edit-input" value="${p.sym}" onchange="editData.dom[${i}].sym=this.value"></td>
+      <td><input class="edit-input" value="${p.name}" onchange="editData.dom[${i}].name=this.value" style="width:70px"></td>
+      <td><input class="edit-input" type="number" value="${p.pct||0}" onchange="editData.dom[${i}].pct=+this.value" style="width:55px"></td>
+      <td>${actionSelect(p.action,`editData.dom[${i}].action=this.value;editData.dom[${i}].actionLabel=({hold:'홀드',buy:'매수',sell:'익절',cut:'손절 검토',watch:'관심'})[this.value]`)}</td>
+      <td><button class="edit-del" onclick="editData.dom.splice(${i},1);renderModalRows()">✕</button></td>
+    </tr>`).join('');
+  // 관심
+  const wBody=document.getElementById('watch-edit-rows');
+  if(wBody) wBody.innerHTML=editData.watch.map((w,i)=>`
+    <tr>
+      <td><input class="edit-input" value="${w.sym}" onchange="editData.watch[${i}].sym=this.value" style="width:80px"></td>
+      <td><input class="edit-input" value="${w.name}" onchange="editData.watch[${i}].name=this.value" style="width:70px"></td>
+      <td><input class="edit-input" value="${w.note||''}" onchange="editData.watch[${i}].note=this.value"></td>
+      <td>${actionSelect(w.action,`editData.watch[${i}].action=this.value;editData.watch[${i}].actionLabel=({hold:'홀드',buy:'매수',sell:'익절',cut:'손절 검토',watch:'관심'})[this.value]`)}</td>
+      <td><button class="edit-del" onclick="editData.watch.splice(${i},1);renderModalRows()">✕</button></td>
+    </tr>`).join('');
+  // 전략
+  ['cut','sell','buy'].forEach(type=>{
+    const el=document.getElementById(`strat-${type}-rows`);
+    if(!el) return;
+    const color=type==='cut'?'var(--red)':type==='sell'?'var(--gold)':'var(--green)';
+    el.innerHTML=(editData.strategy[type]||[]).map((x,i)=>`
+      <div style="border:1px solid var(--border);border-radius:7px;padding:10px;margin-bottom:7px;background:var(--bg4)">
+        <div style="display:flex;gap:8px;margin-bottom:7px;align-items:center">
+          <input class="edit-input" value="${x.sym}" placeholder="티커/종목명" onchange="editData.strategy.${type}[${i}].sym=this.value" style="width:100px">
+          <input class="edit-input" type="number" value="${x.prog||0}" min="0" max="100" placeholder="진행도%" onchange="editData.strategy.${type}[${i}].prog=+this.value" style="width:75px">
+          <span style="font-size:10px;color:var(--text3)">%</span>
+          <button class="edit-del" onclick="editData.strategy.${type}.splice(${i},1);renderModalRows()" style="margin-left:auto">✕</button>
+        </div>
+        <textarea class="edit-input" rows="2" onchange="editData.strategy.${type}[${i}].detail=this.value" style="resize:none;width:100%;font-family:'Noto Sans KR',sans-serif">${x.detail||''}</textarea>
+      </div>`).join('');
+  });
+}
+
+function addRow(type) {
+  if(type==='intl') editData.intl.push({sym:'NEW',name:'종목명',pct:0,color:'#00d4aa',action:'hold',actionLabel:'홀드'});
+  else if(type==='dom') editData.dom.push({sym:'새종목',name:'종목코드',pct:0,action:'hold',actionLabel:'홀드'});
+  else if(type==='watch') editData.watch.push({sym:'NEW',name:'설명',note:'진입 전략 메모',action:'watch',actionLabel:'관심'});
+  renderModalRows();
+}
+
+function addStratRow(type) {
+  if(!editData.strategy[type]) editData.strategy[type]=[];
+  editData.strategy[type].push({sym:'종목명',detail:'전략 메모',prog:0});
+  renderModalRows();
+}
+
+function savePortfolio() {
+  PORTFOLIO = JSON.parse(JSON.stringify(editData));
+  saveToStorage(PORTFOLIO);
+  renderPortfolio();
+  const ok=document.getElementById('save-ok');
+  ok.classList.add('show');
+  setTimeout(()=>ok.classList.remove('show'),2500);
+}
+
+// ══════════════════════════════════════════
+// 정적 렌더
+// ══════════════════════════════════════════
+function renderSectors() {
+  const sectors=[
+    {name:'반도체',pct:+2.4},{name:'2차전지',pct:-1.8},{name:'조선·중공업',pct:+3.1},{name:'바이오',pct:+0.7},
+    {name:'자동차',pct:-0.5},{name:'철강·소재',pct:-1.2},{name:'금융·은행',pct:+0.3},{name:'AI·플랫폼',pct:+1.9},
+  ];
+  const html=sectors.map(s=>{
+    const t=Math.min(Math.abs(s.pct)/4,1),bg=s.pct>0?`rgba(0,227,150,${.08+t*.22})`:`rgba(255,69,96,${.08+t*.22})`,col=s.pct>0?'var(--green)':'var(--red)';
+    return `<div class="sc" style="background:${bg}"><div class="sc-name" style="color:${col}">${s.name}</div><div class="sc-pct" style="color:${col}">${s.pct>=0?'+':''}${s.pct}%</div></div>`;
+  }).join('');
+  ['sector-ov','sector-dom'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; });
+}
+
+function renderEvents() {
+  const el=document.getElementById('ev-cal'); if(!el) return;
+  const evs=[
+    {date:'04/30',title:'PCE 물가지수 발표',desc:'미 연준 선호 인플레 지표',tag:'econ'},
+    {date:'05/01',title:'FOMC 회의 시작',desc:'5월 금리 결정 (5/1~2)',tag:'fomc'},
+    {date:'05/02',title:'FOMC 결과 + 파월 기자회견',desc:'동결 vs 조기 인하 주목',tag:'fomc'},
+    {date:'05/02',title:'Apple 1Q 실적',desc:'EPS $1.62 예상',tag:'earn'},
+    {date:'05/08',title:'한국 1분기 GDP 확정',desc:'성장률 전망 2.1%',tag:'kr'},
+    {date:'05/15',title:'미국 CPI 발표',desc:'4월 소비자물가 전망 2.9%',tag:'econ'},
+  ];
+  const tm={fomc:'tag-fomc',econ:'tag-econ',earn:'tag-earn',kr:'tag-kr'},tl={fomc:'FOMC',econ:'지표',earn:'실적',kr:'국내'};
+  el.innerHTML=evs.map(e=>`<div class="ev-item"><span class="ev-date">${e.date}</span><div><div class="ev-title">${e.title}<span class="ev-tag ${tm[e.tag]}">${tl[e.tag]}</span></div><div class="ev-desc">${e.desc}</div></div></div>`).join('');
+}
+
+function renderNews(id,items) {
+  const el=document.getElementById(id); if(!el) return;
+  el.innerHTML=items.map(n=>`
+    <a class="news-item" href="https://www.google.com/search?q=${encodeURIComponent(n.title)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit">
+      <div class="n-meta"><span class="n-src">${n.src}</span><span style="color:var(--border2)">·</span><span class="n-time">${n.time}</span><span class="n-tag" style="background:${n.tc}20;color:${n.tc};border:1px solid ${n.tc}40">${n.tag}</span></div>
+      <div class="n-title">${n.title}</div>
+    </a>`).join('');
+}
+
+function renderFlow() {
+  const el=document.getElementById('flow-panel'); if(!el) return;
+  [{label:'외국인 순매수',val:'+3,240억',col:'var(--green)',sub:'KOSPI'},{label:'기관 순매수',val:'+890억',col:'var(--green)',sub:'연기금 포함'},{label:'개인 순매도',val:'-4,130억',col:'var(--red)',sub:'차익실현'}]
+  .forEach(f=>{el.innerHTML+= `<div class="flow-row"><div><div class="flow-lbl">${f.label}</div><div class="flow-sub">${f.sub}</div></div><div class="flow-val" style="color:${f.col}">${f.val}</div></div>`; });
+}
+
+// ══════════════════════════════════════════
+// 부동산
+// ══════════════════════════════════════════
+const RE={
+  seoul:{title:'서울 전체 동향',stats:[{label:'매매가 변동',val:'+0.04%',dir:'up',sub:'주간'},{label:'전세가 변동',val:'+0.02%',dir:'up',sub:'주간'},{label:'KB선도아파트 50지수',val:'216.3',dir:'up',sub:'+0.3pt'},{label:'주담대 금리',val:'3.62%',dir:'down',sub:'5대은행 평균'}]},
+  gangnam:{title:'강남·서초·송파 동향',stats:[{label:'강남 3구 매매가',val:'+0.09%',dir:'up',sub:'주간'},{label:'강남 3구 전세가',val:'+0.05%',dir:'up',sub:'주간'},{label:'강남구 평균 매매가',val:'29.4억',dir:'up',sub:'84㎡ 기준'},{label:'월간 거래량',val:'312건',dir:'up',sub:'강남 3구'}]},
+  pangyo:{title:'경기 판교 동향',stats:[{label:'판교 매매가 변동',val:'+0.06%',dir:'up',sub:'주간'},{label:'판교 전세가 변동',val:'+0.03%',dir:'up',sub:'주간'},{label:'평균 매매가 (84㎡)',val:'14.8억',dir:'up',sub:'분당구 일부'},{label:'IT 수요 동향',val:'강보합',dir:'flat',sub:'재택 해제 후 회복'}]},
+  bundang:{title:'경기 분당 동향',stats:[{label:'분당 매매가 변동',val:'+0.05%',dir:'up',sub:'주간'},{label:'분당 전세가 변동',val:'+0.02%',dir:'up',sub:'주간'},{label:'평균 매매가 (84㎡)',val:'12.1억',dir:'up',sub:'재건축 기대'},{label:'선도지구 기대감',val:'높음',dir:'up',sub:'착공 일정 주목'}]},
+};
+let curRegion='seoul';
+function switchRegion(r,btn) {
+  curRegion=r;
+  document.querySelectorAll('.re-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('re-region-title').textContent=RE[r].title;
+  document.getElementById('re-stats').innerHTML=RE[r].stats.map(s=>`<div class="re-card"><div class="re-lbl">${s.label}</div><div class="re-val ${s.dir}">${s.val}</div><div class="re-sub">${s.sub}</div></div>`).join('');
+}
+function renderRealEstate() {
+  switchRegion('seoul',document.querySelector('.re-tab'));
+  renderNews('re-news',[
+    {title:'서울 아파트 거래량 3개월 연속 증가...강남·마·용·성 회복세 뚜렷',src:'매일경제',time:'오늘',tag:'시장',tc:'#ff4560'},
+    {title:'분당 선도지구 본청약 일정 윤곽...1기 신도시 재건축 기대감 고조',src:'조선일보',time:'2시간 전',tag:'재건축',tc:'#0099ff'},
+    {title:'판교 테크노밸리 직주근접 수요 꾸준...전세가 상승세 지속',src:'한국경제',time:'4시간 전',tag:'판교',tc:'#00d4aa'},
+    {title:'한국은행 기준금리 동결...하반기 추가 인하 기대감 유지',src:'연합뉴스',time:'어제',tag:'금리',tc:'#f5c842'},
+  ]);
+  const pol=document.getElementById('re-policy'); if(!pol) return;
+  pol.innerHTML=[
+    {badge:'HOT',bc:'pol-hot',title:'스트레스 DSR 2단계 시행 임박',desc:'금융당국 6월 시행 검토. 대출 한도 추가 축소 예상. 매수 전 대출 한도 사전 확인 필수.'},
+    {badge:'INFO',bc:'pol-info',title:'1기 신도시 선도지구 지정 완료',desc:'분당·일산·평촌·산본·중동 지정 완료. 분당 착공 가장 빠를 전망.'},
+    {badge:'WARN',bc:'pol-warn',title:'취득세 중과 완화 논의',desc:'다주택자 취득세 중과 일부 완화 입법 예고. 확정 시 수요 회복 촉진 가능성.'},
+    {badge:'INFO',bc:'pol-info',title:'특례보금자리론 금리 인하',desc:'주금공, 0.1%p 인하 시행. 실수요자 금융 부담 소폭 경감.'},
+  ].map(p=>`<div class="policy-item"><span class="pol-badge ${p.bc}">${p.badge}</span><div><div class="pol-title">${p.title}</div><div class="pol-desc">${p.desc}</div></div></div>`).join('');
+  const apt=document.getElementById('apt-cal'); if(!apt) return;
+  apt.innerHTML=[
+    {name:'래미안 원펜타스',loc:'서울 서초구 반포동',date:'5/12',units:'292세대',rt:'apt-seoul',rl:'서울'},
+    {name:'디에이치 방배 아크로',loc:'서울 서초구 방배동',date:'5/18',units:'3,065세대',rt:'apt-seoul',rl:'서울'},
+    {name:'힐스테이트 판교 모비우스',loc:'경기 성남시 판교',date:'5/21',units:'384세대',rt:'apt-gyeonggi',rl:'판교'},
+    {name:'e편한세상 분당 어반파크',loc:'경기 성남시 분당구',date:'5/26',units:'612세대',rt:'apt-gyeonggi',rl:'분당'},
+    {name:'힐스테이트 동탄레이크파크',loc:'경기 화성시 동탄2',date:'5/28',units:'484세대',rt:'apt-gyeonggi',rl:'경기'},
+    {name:'검단신도시 푸르지오',loc:'인천 서구 원당동',date:'6/03',units:'1,124세대',rt:'apt-incheon',rl:'인천'},
+  ].map(a=>`<div class="apt-row"><div><div class="apt-name"><span class="apt-rtag ${a.rt}">${a.rl}</span>${a.name}</div><div class="apt-loc">${a.loc}</div></div><div style="text-align:right"><div class="apt-date">청약 ${a.date}</div><div class="apt-units">${a.units}</div></div></div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// AI 코멘트
+// ══════════════════════════════════════════
+async function fetchAI(id, prompt) {
+  const el=document.getElementById(id); if(!el) return;
+  el.innerHTML='웹 검색 중... <span class="ai-cursor"></span>';
+  el.className='ai-text ai-loading';
+  try {
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:prompt}]})
+    });
+    const d=await r.json();
+    const txt=(d.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
+    el.className='ai-text';
+    el.innerHTML=txt.replace(/\n/g,'<br>')||'⚠️ 분석 내용을 불러오지 못했습니다.';
+  } catch { el.className='ai-text'; el.innerHTML='⚠️ AI 분석 실패. 자동 재시도 예정.'; }
+}
+
+async function fetchAllAI() {
+  const today=new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'});
+  const portSummary=PORTFOLIO.strategy.cut.map(x=>x.sym).join('·')+' 손절 / '+PORTFOLIO.strategy.sell.map(x=>x.sym).join('·')+' 익절 → '+PORTFOLIO.strategy.buy.map(x=>x.sym).join('·')+' 분할매수';
+  await Promise.all([
+    fetchAI('ai-main',`오늘(${today}) 글로벌 증시와 한국 증시 현황을 웹 검색해서 4~5문장으로 분석해줘. S&P500, NASDAQ, KOSPI, 달러원 환율, VIX, 미국 금리를 반영해 투자자 관점 핵심만. 한국어로, 인사말 없이 바로.`),
+    fetchAI('ai-re',`오늘(${today}) 한국 부동산 시장을 웹 검색 후 4~5문장으로 요약. 서울·경기 분당·판교 아파트 동향, 금리, 정책 핵심을 투자자 시각으로. 한국어, 인사말 없이 바로.`),
+    fetchAI('ai-strat',`다음 포트폴리오 전략(${portSummary})을 최신 시장 상황 검색 후 4~5문장으로 총평. 전략 타당성과 리스크를 짚어줘. 한국어, 인사말 없이 바로.`),
+  ]);
+}
+
+// ══════════════════════════════════════════
+// 수동 새로고침
+// ══════════════════════════════════════════
+async function manualRefresh() {
+  const btn = document.getElementById('refresh-btn'), icon = document.getElementById('refresh-icon');
+  btn.classList.add('loading'); icon.classList.add('spinning');
+  dataSec = DATA_INTERVAL; aiSec = AI_INTERVAL;
+  fetchMarketData().finally(() => {
+    btn.classList.remove('loading'); icon.classList.remove('spinning');
+  });
+  fetchAllAI();
+}
+
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&dataSec<60){ fetchMarketData(); dataSec=DATA_INTERVAL; } });
+
+// ══════════════════════════════════════════
+// 초기화
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  renderSectors();
+  renderEvents();
+  renderPortfolio();
+  renderNews('global-news',[
+    {title:'Fed 파월 "인플레 재가속 리스크...연내 인하 신중히 검토"',src:'Reuters',time:'1시간 전',tag:'FOMC',tc:'#ff4560'},
+    {title:'NVIDIA 2분기 가이던스 시장 예상치 15% 상회...AI 인프라 수요 폭발적',src:'Bloomberg',time:'3시간 전',tag:'NVDA',tc:'#00d4aa'},
+    {title:'미중 무역 갈등 재점화...반도체·희토류 추가 관세 검토',src:'FT',time:'5시간 전',tag:'지정학',tc:'#f5c842'},
+    {title:'미국 1분기 GDP 2.4%...예상치 상회, 연착륙 기대 유지',src:'WSJ',time:'어제',tag:'매크로',tc:'#0099ff'},
+  ]);
+  renderNews('dom-news',[
+    {title:'한미반도체, HBM4 테스트 장비 수주 확대...TSMC 공급망 진입 가시화',src:'전자신문',time:'2시간 전',tag:'반도체',tc:'#00d4aa'},
+    {title:'HD현대중공업, LNG선 수주 잔고 사상 최대...조선업 슈퍼사이클 지속',src:'매일경제',time:'4시간 전',tag:'조선',tc:'#0099ff'},
+    {title:'2차전지 섹터 전반 하락...중국 CATL 저가 공세 우려 지속',src:'한국경제',time:'6시간 전',tag:'2차전지',tc:'#ff4560'},
+    {title:'삼성전자, HBM3E 양산 승인 임박...SK하이닉스와 격차 줄이나',src:'연합뉴스',time:'어제',tag:'삼성',tc:'#0099ff'},
+  ]);
+  renderRealEstate();
+  renderFlow();
+  await fetchMarketData();
+  fetchAllAI();
+});
+</script>
+</body>
+</html>
